@@ -7,6 +7,10 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from './lib/db.js';
+import axios from 'axios';
+import bcrypt from 'bcryptjs';
+import { nanoid } from 'nanoid';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -15,39 +19,74 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || '0limits-ultra-secret-key-2024';
 
 // Security Middleware - PROTECTION RIGID
 app.use(helmet({
-  contentSecurityPolicy: false, // For local dev and external resources
+  contentSecurityPolicy: false,
 }));
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
 
-// Rate Limiting - Prevent Brute Force and Abuse
+// Rate Limiting
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' }
 });
 
-// Proxy Logic to external API
-import axios from 'axios';
+// Middleware: Verify JWT & Expiration
+const authenticate = async (req, res, next) => {
+    if (!db.data) await db.read();
+    
+    // Auth can be via Header (API) or Cookie/Header (Dashboard)
+    const authHeader = req.headers.authorization;
+    const token = authHeader ? authHeader.split(' ')[1] : req.query.token;
 
-app.get('/api/consultar', async (req, res) => {
-  if (!db.data) await db.read();
-  const { type, value, token } = req.query;
+    if (!token) return res.status(401).json({ error: 'Token ausente.' });
 
-  // 1. Validate Token
-  const user = db.data.users.find(u => u.token === token);
-  if (!user) {
-    return res.status(401).json({ error: 'Token inválido ou ausente. Acesso negado.' });
-  }
+    // Check if it's an API Token (nanoid) or Session Token (JWT)
+    let user = db.data.users.find(u => u.token === token);
+    
+    if (!user) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            user = db.data.users.find(u => u.username === decoded.username);
+        } catch (err) {
+            return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
+        }
+    }
 
-  // 2. Map types to external endpoints
+    if (!user) return res.status(401).json({ error: 'Usuário não encontrado.' });
+
+    // Check Expiration
+    if (user.expiresAt && new Date(user.expiresAt) < new Date()) {
+        return res.status(403).json({ error: 'Sua licença expirou. Entre em contato com o administrador.' });
+    }
+
+    req.user = user;
+    next();
+};
+
+const adminOnly = (req, res, next) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito ao administrador.' });
+    next();
+};
+
+// --- ROUTES ---
+
+// 1. Health/Auth Check
+app.get('/auth/me', authenticate, (req, res) => {
+    const { password, ...safeUser } = req.user;
+    res.json({ success: true, user: safeUser });
+});
+
+// 2. Proxy API
+app.get('/api/consultar', authenticate, async (req, res) => {
+  const { type, value } = req.query;
+
   const endpoints = {
     cpf: 'busca_cpf.php?cpf=',
     nome: 'busca_nome.php?nome=',
@@ -58,111 +97,110 @@ app.get('/api/consultar', async (req, res) => {
   };
 
   const endpoint = endpoints[type];
-  if (!endpoint) {
-    return res.status(400).json({ error: 'Tipo de consulta invlido.' });
-  }
+  if (!endpoint) return res.status(400).json({ error: 'Tipo de consulta inválido.' });
 
   try {
     const targetUrl = `http://apisbrasilpro.site/api/${endpoint}${encodeURIComponent(value)}`;
-    console.log(`[Proxy] Fetching: ${targetUrl}`);
-    
     const response = await axios.get(targetUrl, {
       timeout: 10000,
-      headers: {
-        'User-Agent': '0Limits-Gateway/1.0'
-      }
+      headers: { 'User-Agent': '0Limits-Gateway/2.0' }
     });
 
     const responseData = response.data;
-    
-    // Filter out unwanted credits from external API
     if (responseData && typeof responseData === 'object') {
         delete responseData.criado_por;
         delete responseData.criado_pelo;
         if (responseData.DADOS && responseData.DADOS.criado_por) delete responseData.DADOS.criado_por;
     }
 
-    // Save Log
-    db.data.logs.unshift({ // Add to start of list
-      user: user.username,
+    db.data.logs.unshift({
+      user: req.user.username,
       type,
-      value: value.slice(0, 3) + '***' + (value.length > 6 ? value.slice(-2) : ''), 
+      value: value.slice(0, 3) + '***' + (value.length > 6 ? value.slice(-2) : ''),
       timestamp: new Date().toISOString()
     });
-    
-    // Keep only last 100 logs
-    if (db.data.logs.length > 100) db.data.logs = db.data.logs.slice(0, 100);
-    
+    if (db.data.logs.length > 200) db.data.logs = db.data.logs.slice(0, 200);
     await db.write();
 
     res.json(responseData);
   } catch (error) {
-    console.error('Proxy Error:', error.message);
-    res.status(500).json({ error: 'Erro ao intermediar a consulta. API destino pode estar fora do ar.' });
+    res.status(500).json({ error: 'Erro na API destino.' });
   }
 });
 
-// Admin Route to get logs (needed for dashboard)
-app.get('/api/logs', async (req, res) => {
-    const { token } = req.query;
-    if (!db.data) await db.read();
-    const user = db.data.users.find(u => u.token === token);
-    if (!user) return res.status(401).json({ error: 'Negado.' });
-
-    // Users see their own logs, admins see everything
-    const logs = user.role === 'admin' 
+// 3. User Logs
+app.get('/api/logs', authenticate, (req, res) => {
+    const logs = req.user.role === 'admin' 
         ? db.data.logs 
-        : db.data.logs.filter(l => l.user === user.username);
-    
+        : db.data.logs.filter(l => l.user === req.user.username);
     res.json(logs);
 });
 
-// Auth Routes
-import bcrypt from 'bcryptjs';
-import { nanoid } from 'nanoid';
+// 4. Admin Management
+app.get('/api/admin/users', authenticate, adminOnly, (req, res) => {
+    const users = db.data.users.map(({ password, ...u }) => u);
+    res.json(users);
+});
 
+app.post('/api/admin/users/extend', authenticate, adminOnly, async (req, res) => {
+    const { username, days } = req.body;
+    const target = db.data.users.find(u => u.username === username);
+    if (!target) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    
+    const currentExp = new Date(target.expiresAt || new Date());
+    currentExp.setDate(currentExp.getDate() + parseInt(days));
+    target.expiresAt = currentExp.toISOString();
+    
+    await db.write();
+    res.json({ success: true, expiresAt: target.expiresAt });
+});
+
+app.delete('/api/admin/users/:username', authenticate, adminOnly, async (req, res) => {
+    if (req.params.username === 'admin') return res.status(400).json({ error: 'Não é possível deletar o admin principal.' });
+    db.data.users = db.data.users.filter(u => u.username !== req.params.username);
+    await db.write();
+    res.json({ success: true });
+});
+
+// 5. Auth Logic
 app.post('/auth/login', async (req, res) => {
   if (!db.data) await db.read();
   const { username, password } = req.body;
   const user = db.data.users.find(u => u.username === username);
   
-  if (user) {
-    // For admin with empty/default password
-    const isAdminDefault = user.role === 'admin' && (password === 'admin123' || user.password === '');
-    
-    // For regular users (bcrypt check)
-    const isPasswordValid = user.password.startsWith('$2b$') 
-      ? await bcrypt.compare(password, user.password)
-      : isAdminDefault;
-
-    if (isPasswordValid || isAdminDefault) {
-      res.json({ success: true, user: { username: user.username, token: user.token, role: user.role } });
-    } else {
-      res.status(401).json({ error: 'Credenciais inválidas.' });
+  if (user && await bcrypt.compare(password, user.password)) {
+    // Check expiration during login
+    if (user.expiresAt && new Date(user.expiresAt) < new Date()) {
+        return res.status(403).json({ error: 'Sua conta expirou.' });
     }
+
+    const sessionToken = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ success: true, token: sessionToken, user: { username: user.username, role: user.role, token: user.token, expiresAt: user.expiresAt } });
   } else {
     res.status(401).json({ error: 'Credenciais inválidas.' });
   }
 });
 
 app.post('/auth/register', async (req, res) => {
-    // Basic register for demo
     const { username, password } = req.body;
     if (!db.data) await db.read();
-    if (db.data.users.find(u => u.username === username)) {
-        return res.status(400).json({ error: 'Usuário já existe.' });
-    }
+    if (db.data.users.find(u => u.username === username)) return res.status(400).json({ error: 'Usuário já existe.' });
+
+    const exp = new Date();
+    exp.setDate(exp.getDate() + 7); // Default 7 days trial
+
     const newUser = {
         username,
         password: await bcrypt.hash(password, 10),
         role: 'user',
-        token: nanoid(32)
+        token: nanoid(32),
+        expiresAt: exp.toISOString()
     };
     db.data.users.push(newUser);
     await db.write();
-    res.json({ success: true, token: newUser.token });
+    res.json({ success: true });
 });
 
 app.listen(PORT, () => {
-  console.log(`[0Limits] Server running at http://localhost:${PORT}`);
+  console.log(`[0Limits] Secure Server running at http://localhost:${PORT}`);
 });

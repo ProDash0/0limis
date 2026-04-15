@@ -23,11 +23,12 @@
             </div>
         </section>
 
-        <!-- Dashboard Section (Hidden by default) -->
+        <!-- Dashboard Section -->
         <main id="dashboard" class="hidden">
             <header class="top-nav">
                 <div class="logo">0LIMITS <span class="badge">ROLE</span></div>
                 <div class="user-info">
+                    <div class="account-expiry">Expira em: <span id="display-expiry">...</span></div>
                     <span id="display-user">Usuário</span>
                     <button onclick="logout()" class="btn-icon"><i data-lucide="log-out"></i></button>
                 </div>
@@ -41,14 +42,16 @@
                         <button onclick="copyToken()" class="btn-icon"><i data-lucide="copy"></i></button>
                     </div>
                     <hr>
-                    <nav>
+                    <nav id="main-nav">
                         <button onclick="view('consultas')" class="nav-item active"><i data-lucide="search"></i> Consultas</button>
                         <button onclick="view('documentacao')" class="nav-item"><i data-lucide="file-text"></i> Documentação</button>
                         <button onclick="view('logs')" class="nav-item"><i data-lucide="activity"></i> Histórico</button>
+                        <button id="nav-admin" onclick="view('admin')" class="nav-item hidden"><i data-lucide="shield"></i> Gerenciar</button>
                     </nav>
                 </aside>
 
                 <section class="content-area">
+                    <!-- Consultas View -->
                     <div id="view-consultas" class="view">
                         <div class="query-grid">
                             <div class="query-card card" onclick="openQuery('cpf')">
@@ -90,31 +93,27 @@
                         </div>
                     </div>
 
+                    <!-- Doc View -->
                     <div id="view-documentacao" class="view hidden">
                         <div class="card doc-card">
                             <h2>Documentação Técnica</h2>
                             <p>Utilize nossa API para integrar consultas diretamente no seu software.</p>
                             <br>
                             <h3>Endpoint Principal</h3>
-                            <code id="base-url-doc" style="background:#000; color:#fff; padding: 10px; display: block;">/api/consultar</code>
+                            <code style="background:#000; color:#fff; padding: 10px; display: block;">/api/consultar</code>
                             
                             <br>
-                            <h3>Parâmetros (Query String)</h3>
-                            <ul>
-                                <li><strong>type</strong>: Tipo da consulta (cpf, nome, rg, mae, pai, titulo)</li>
-                                <li><strong>value</strong>: O valor a ser buscado</li>
-                                <li><strong>token</strong>: Sua chave de acesso pessoal</li>
-                            </ul>
-
-                            <br>
-                            <h3>Exemplo de Integração (cURL)</h3>
-                            <pre style="background: #222; color: #00ff00; padding: 15px; border-radius: 4px; border-left: 5px solid #00ff00;">GET /api/consultar?type=cpf&value=00000000000&token=CHAVE_AQUI</pre>
+                            <h3>Exemplo de Chamada (cURL)</h3>
+                            <pre id="curl-example" style="background: #222; color: #00ff00; padding: 15px; border-radius: 4px; border-left: 5px solid #00ff00;">
+curl -X GET "/api/consultar?type=cpf&value={cpf}&token=SUA_CHAVE"
+                            </pre>
                             
                             <hr>
-                            <p><i data-lucide="info"></i> Todas as requisições via API são registradas no seu histórico em tempo real.</p>
+                            <p><i data-lucide="info"></i> Todas as requisições via API são registradas no seu histórico e consomem sua licença.</p>
                         </div>
                     </div>
 
+                    <!-- Logs View -->
                     <div id="view-logs" class="view hidden">
                         <div class="card">
                             <h2>Histórico de Atividade</h2>
@@ -126,9 +125,25 @@
                                         <th>Data</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Logs populated by JS -->
-                                </tbody>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Admin View -->
+                    <div id="view-admin" class="view hidden">
+                        <div class="card">
+                            <h2>Painel de Controle</h2>
+                            <table id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuário</th>
+                                        <th>Chave API</th>
+                                        <th>Expira em</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
