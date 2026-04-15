@@ -73,20 +73,48 @@ app.get('/api/consultar', async (req, res) => {
       }
     });
 
+    const responseData = response.data;
+    
+    // Filter out unwanted credits from external API
+    if (responseData && typeof responseData === 'object') {
+        delete responseData.criado_por;
+        delete responseData.criado_pelo;
+        if (responseData.DADOS && responseData.DADOS.criado_por) delete responseData.DADOS.criado_por;
+    }
+
     // Save Log
-    db.data.logs.push({
+    db.data.logs.unshift({ // Add to start of list
       user: user.username,
       type,
-      value: value.slice(0, 3) + '***', // Hide sensitive part in logs
+      value: value.slice(0, 3) + '***' + (value.length > 6 ? value.slice(-2) : ''), 
       timestamp: new Date().toISOString()
     });
+    
+    // Keep only last 100 logs
+    if (db.data.logs.length > 100) db.data.logs = db.data.logs.slice(0, 100);
+    
     await db.write();
 
-    res.json(response.data);
+    res.json(responseData);
   } catch (error) {
     console.error('Proxy Error:', error.message);
     res.status(500).json({ error: 'Erro ao intermediar a consulta. API destino pode estar fora do ar.' });
   }
+});
+
+// Admin Route to get logs (needed for dashboard)
+app.get('/api/logs', async (req, res) => {
+    const { token } = req.query;
+    if (!db.data) await db.read();
+    const user = db.data.users.find(u => u.token === token);
+    if (!user) return res.status(401).json({ error: 'Negado.' });
+
+    // Users see their own logs, admins see everything
+    const logs = user.role === 'admin' 
+        ? db.data.logs 
+        : db.data.logs.filter(l => l.user === user.username);
+    
+    res.json(logs);
 });
 
 // Auth Routes

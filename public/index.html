@@ -26,7 +26,7 @@
         <!-- Dashboard Section (Hidden by default) -->
         <main id="dashboard" class="hidden">
             <header class="top-nav">
-                <div class="logo">0LIMITS <span class="badge">ADMIN</span></div>
+                <div class="logo">0LIMITS <span class="badge">ROLE</span></div>
                 <div class="user-info">
                     <span id="display-user">Usuário</span>
                     <button onclick="logout()" class="btn-icon"><i data-lucide="log-out"></i></button>
@@ -44,7 +44,7 @@
                     <nav>
                         <button onclick="view('consultas')" class="nav-item active"><i data-lucide="search"></i> Consultas</button>
                         <button onclick="view('documentacao')" class="nav-item"><i data-lucide="file-text"></i> Documentação</button>
-                        <button onclick="view('logs')" class="nav-item"><i data-lucide="activity"></i> Logs</button>
+                        <button onclick="view('logs')" class="nav-item"><i data-lucide="activity"></i> Histórico</button>
                     </nav>
                 </aside>
 
@@ -83,8 +83,8 @@
                                 <input type="text" id="query-input" placeholder="Digite o valor...">
                                 <button id="btn-search" class="btn-main">CONSULTAR AGORA</button>
                                 <button onclick="closeModal()" class="btn-sub">FECHAR</button>
-                                <div id="results" class="results-box card">
-                                    <pre id="json-output">// Resultados aparecerão aqui</pre>
+                                <div id="results" class="results-box card hidden">
+                                    <div id="json-output"></div>
                                 </div>
                             </div>
                         </div>
@@ -92,12 +92,26 @@
 
                     <div id="view-documentacao" class="view hidden">
                         <div class="card doc-card">
-                            <h2>Documentação da API</h2>
-                            <p>Sua URL Base:</p>
-                            <code id="base-url-doc">http://your-render-app.com/api/consultar</code>
+                            <h2>Documentação Técnica</h2>
+                            <p>Utilize nossa API para integrar consultas diretamente no seu software.</p>
+                            <br>
+                            <h3>Endpoint Principal</h3>
+                            <code id="base-url-doc" style="background:#000; color:#fff; padding: 10px; display: block;">/api/consultar</code>
+                            
+                            <br>
+                            <h3>Parâmetros (Query String)</h3>
+                            <ul>
+                                <li><strong>type</strong>: Tipo da consulta (cpf, nome, rg, mae, pai, titulo)</li>
+                                <li><strong>value</strong>: O valor a ser buscado</li>
+                                <li><strong>token</strong>: Sua chave de acesso pessoal</li>
+                            </ul>
+
+                            <br>
+                            <h3>Exemplo de Integração (cURL)</h3>
+                            <pre style="background: #222; color: #00ff00; padding: 15px; border-radius: 4px; border-left: 5px solid #00ff00;">GET /api/consultar?type=cpf&value=00000000000&token=CHAVE_AQUI</pre>
+                            
                             <hr>
-                            <h3>Exemplo de Chamada:</h3>
-                            <pre>GET /api/consultar?type=cpf&value=000.000.000-00&token=SUA_CHAVE</pre>
+                            <p><i data-lucide="info"></i> Todas as requisições via API são registradas no seu histórico em tempo real.</p>
                         </div>
                     </div>
 

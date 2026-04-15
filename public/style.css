@@ -282,7 +282,71 @@ td {
     border-bottom: 2px solid #eee;
 }
 
+/* Result Tables */
+.result-table {
+    border: 2px solid black;
+    margin-bottom: 1rem;
+}
+
+.result-table th.table-section {
+    background: #000;
+    color: #fff;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.result-table td.key {
+    font-weight: 800;
+    width: 35%;
+    text-transform: capitalize;
+    background: #fdfdfd;
+}
+
+.result-table td.val {
+    color: #333;
+}
+
+.raw-json {
+    margin-top: 1rem;
+    border-top: 1px dashed #ccc;
+    padding-top: 0.5rem;
+}
+
+.raw-json summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Loader */
+.loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-weight: 800;
+    letter-spacing: 2px;
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* Badges */
+.badge.admin { background: #ff0000; }
+.badge.user { background: #000000; }
+.badge.cpf { background: #e0e0e0; color: #000; }
+.badge.nome { background: #f0f0f0; color: #000; }
+
 .hidden { display: none !important; }
+
+.error-text {
+    color: #ff0000;
+    font-weight: 800;
+}
 
 @media (max-width: 768px) {
     .grid-layout {
