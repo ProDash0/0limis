@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0LIMITS | Premium API Gateway</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="checkered-bg">
+    <div id="app">
+        <!-- Auth Section -->
+        <section id="auth-section" class="card">
+            <h1 class="glitch-text">0LIMITS</h1>
+            <p>CONEXÃO ULTRA RÍGIDA</p>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Usuário">
+                <input type="password" id="password" placeholder="Senha">
+            </div>
+            <div class="button-group">
+                <button onclick="login()" class="btn-main">ENTRAR</button>
+                <button onclick="showRegister()" class="btn-sub">CADASTRAR</button>
+            </div>
+        </section>
+
+        <!-- Dashboard Section (Hidden by default) -->
+        <main id="dashboard" class="hidden">
+            <header class="top-nav">
+                <div class="logo">0LIMITS <span class="badge">ADMIN</span></div>
+                <div class="user-info">
+                    <span id="display-user">Usuário</span>
+                    <button onclick="logout()" class="btn-icon"><i data-lucide="log-out"></i></button>
+                </div>
+            </header>
+
+            <div class="grid-layout">
+                <aside class="sidebar card">
+                    <h3>CHAVE API</h3>
+                    <div class="token-box">
+                        <code id="user-token">****************</code>
+                        <button onclick="copyToken()" class="btn-icon"><i data-lucide="copy"></i></button>
+                    </div>
+                    <hr>
+                    <nav>
+                        <button onclick="view('consultas')" class="nav-item active"><i data-lucide="search"></i> Consultas</button>
+                        <button onclick="view('documentacao')" class="nav-item"><i data-lucide="file-text"></i> Documentação</button>
+                        <button onclick="view('logs')" class="nav-item"><i data-lucide="activity"></i> Logs</button>
+                    </nav>
+                </aside>
+
+                <section class="content-area">
+                    <div id="view-consultas" class="view">
+                        <div class="query-grid">
+                            <div class="query-card card" onclick="openQuery('cpf')">
+                                <i data-lucide="user"></i>
+                                <span>CPF</span>
+                            </div>
+                            <div class="query-card card" onclick="openQuery('nome')">
+                                <i data-lucide="users"></i>
+                                <span>Nome</span>
+                            </div>
+                            <div class="query-card card" onclick="openQuery('rg')">
+                                <i data-lucide="credit-card"></i>
+                                <span>RG</span>
+                            </div>
+                            <div class="query-card card" onclick="openQuery('mae')">
+                                <i data-lucide="heart"></i>
+                                <span>Mãe</span>
+                            </div>
+                            <div class="query-card card" onclick="openQuery('pai')">
+                                <i data-lucide="user-plus"></i>
+                                <span>Pai</span>
+                            </div>
+                            <div class="query-card card" onclick="openQuery('titulo')">
+                                <i data-lucide="vote"></i>
+                                <span>Título</span>
+                            </div>
+                        </div>
+
+                        <div id="query-modal" class="modal hidden">
+                            <div class="modal-content card">
+                                <h2 id="modal-title">Consulta</h2>
+                                <input type="text" id="query-input" placeholder="Digite o valor...">
+                                <button id="btn-search" class="btn-main">CONSULTAR AGORA</button>
+                                <button onclick="closeModal()" class="btn-sub">FECHAR</button>
+                                <div id="results" class="results-box card">
+                                    <pre id="json-output">// Resultados aparecerão aqui</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="view-documentacao" class="view hidden">
+                        <div class="card doc-card">
+                            <h2>Documentação da API</h2>
+                            <p>Sua URL Base:</p>
+                            <code id="base-url-doc">http://your-render-app.com/api/consultar</code>
+                            <hr>
+                            <h3>Exemplo de Chamada:</h3>
+                            <pre>GET /api/consultar?type=cpf&value=000.000.000-00&token=SUA_CHAVE</pre>
+                        </div>
+                    </div>
+
+                    <div id="view-logs" class="view hidden">
+                        <div class="card">
+                            <h2>Histórico de Atividade</h2>
+                            <table id="logs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Alvo</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Logs populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
