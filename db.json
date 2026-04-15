@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "$2b$10$1QAQZ/MyXaUroBIda9DBZe/zXPMX7/Htz7WCC0FQoYnUBbs0ZjslO",
+      "role": "admin",
+      "token": "dP_mZ3ueDBCKmBE7EoLKYkdj4-RUtuu6",
+      "expiresAt": "2026-05-15T20:33:28.768Z"
+    },
+    {
+      "username": "teste",
+      "password": "$2b$10$X8kMJ6YSHmn0CtJIC2m2NuxQ06nUlGdecdAVhdYIg8kMJ2x/h9JwO",
+      "role": "user",
+      "token": "zqniPtC6uIfw6V0lF4mfDOP9NHPAJD97",
+      "expiresAt": "2026-05-15T20:33:28.769Z"
+    }
+  ],
+  "logs": [
+    {
+      "user": "teste",
+      "type": "nome",
+      "value": "jai***ro",
+      "timestamp": "2026-04-15T21:26:22.683Z"
+    },
+    {
+      "user": "teste",
+      "type": "cpf",
+      "value": "927***",
+      "timestamp": "2026-04-15T19:57:08.032Z"
+    }
+  ]
+}

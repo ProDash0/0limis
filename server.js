@@ -106,21 +106,21 @@ app.get('/api/consultar', authenticate, async (req, res) => {
       headers: { 'User-Agent': '0Limits-Gateway/2.0' }
     });
 
-    const responseData = response.data;
-    if (responseData && typeof responseData === 'object') {
-        delete responseData.criado_por;
-        delete responseData.criado_pelo;
-        if (responseData.DADOS && responseData.DADOS.criado_por) delete responseData.DADOS.criado_por;
-    }
+    // Limpeza Profunda Recursiva (Remove créditos em qualquer nível)
+    const cleanResponse = (obj) => {
+        if (typeof obj !== 'object' || obj === null) return obj;
+        const keysToRemove = ['criado_por', 'criado_pelo', 'creditos', 'site', 'telegram', 'vendedor', 'dev', 'api'];
+        
+        if (Array.isArray(obj)) return obj.map(cleanResponse);
 
-    db.data.logs.unshift({
-      user: req.user.username,
-      type,
-      value: value.slice(0, 3) + '***' + (value.length > 6 ? value.slice(-2) : ''),
-      timestamp: new Date().toISOString()
-    });
-    if (db.data.logs.length > 200) db.data.logs = db.data.logs.slice(0, 200);
-    await db.write();
+        return Object.fromEntries(
+            Object.entries(obj)
+                .filter(([key]) => !keysToRemove.some(k => key.toLowerCase().includes(k)))
+                .map(([key, value]) => [key, cleanResponse(value)])
+        );
+    };
+
+    const responseData = cleanResponse(response.data);
 
     res.json(responseData);
   } catch (error) {
